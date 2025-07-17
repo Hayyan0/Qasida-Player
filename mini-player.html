@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qasida Mini Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        :root {
+            --primary-color: #28A0BD;
+            --primary-color-light: rgba(40, 160, 189, 0.2);
+            --text-dark: #000;
+            --text-light: #fff;
+            --text-muted: rgba(0, 0, 0, 0.5);
+            --surface-light: #FFFFFF;
+            --surface-translucent: rgba(255, 255, 255, 0.5);
+            --surface-active: rgba(255, 255, 255, 0.75);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --scrollbar-track: rgba(210, 210, 210, 0.75);
+            --scrollbar-thumb: #FFFFFF;
+        }
+
+        /* Dark Theme Variables */
+        body.dark-theme {
+            --primary-color: #34b3cf;
+            --primary-color-light: rgba(52, 179, 207, 0.2);
+            --text-dark: #FFFFFF;
+            --text-light: #000000;
+            --text-muted: rgba(255, 255, 255, 0.6);
+            --surface-light: #2c3e50;
+            --surface-translucent: rgba(0, 0, 0, 0.5);
+            --surface-active: rgba(52, 179, 207, 0.25);
+            --border-color: rgba(255, 255, 255, 0.15);
+            --scrollbar-track: #2c3e50;
+            --scrollbar-thumb: #FFFFFF;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            overflow: hidden;
+            border-radius: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            min-width: 100vw;
+        }
+        
+        .mini-player-container {
+            width: 300px;
+            height: 450px;
+            background: rgba(30, 30, 30, 0.95);
+            background-image: url('./Assets/Background.png');
+            background-size: cover;
+            background-position: center;
+            border-radius: 0px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+
+        }
+
+        body.dark-theme .mini-player-container {
+            background-image: url('./Assets/Dark_Background.png');
+        }
+        
+        .mini-player-header {
+            padding: 15px;
+            text-align: center;
+            color: var(--text-dark);
+            font-size: 14px;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .mini-player-controls {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mini-progress-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .mini-progress-slider {
+            flex: 1;
+            height: 4px;
+            background: var(--primary-color-light);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .mini-progress-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .mini-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .mini-control-buttons {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .mini-control-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        
+        .mini-control-btn:hover {
+            background: var(--primary-color-light);
+        }
+        
+        .mini-control-btn img {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .mini-playlist {
+            flex: 1;
+            padding: 0 15px;
+            overflow-y: scroll; /* MODIFICATION: Changed auto to scroll */
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mini-playlist::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .mini-playlist::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+            border-radius: 10px;
+        }
+
+        .mini-playlist::-webkit-scrollbar-thumb {
+            background-color: var(--scrollbar-thumb);
+            border-radius: 10px;
+            border: 2px solid var(--scrollbar-track);
+        }
+        
+        .mini-playlist-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text-dark);
+        }
+        
+        .mini-playlist-item:hover {
+            background: var(--primary-color-light);
+        }
+        
+        .mini-playlist-item.playing {
+            background: var(--primary-color-light);
+        }
+        
+        .mini-playlist-item .item-number {
+            font-size: 11px;
+            color: var(--text-muted);
+            width: 20px;
+            text-align: center;
+        }
+        
+        .mini-playlist-item .item-details {
+            flex: 1;
+            margin: 0 8px;
+        }
+        
+        .mini-playlist-item .qasida-name {
+            font-size: 12px;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .mini-playlist-item .poet-name {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        
+        .mini-playlist-item .fav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px;
+        }
+        
+        .mini-playlist-item .fav-btn img {
+            width: 14px;
+            height: 14px;
+        }
+        
+        .mini-footer {
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .mini-footer-btn {
+            flex: 1;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: var(--text-dark);
+            cursor: pointer;
+            font-family: 'Noto Kufi Arabic', sans-serif;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+        
+        .mini-footer-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .mini-footer-btn.close {
+            background: rgba(231, 76, 60, 0.8);
+        }
+        
+        .mini-footer-btn.close:hover {
+            background: rgba(231, 76, 60, 1);
+        }
+    </style>
+</head>
+<body>
+    <div class="mini-player-container">
+        <div class="mini-player-header">
+            <div id="mini-qasida-name">حدد قصيدة للتشغيل</div>
+        </div>
+        
+        <div class="mini-player-controls">
+            <div class="mini-progress-container">
+                <span class="mini-time" id="mini-current-time">0:00</span>
+                <input type="range" id="mini-progress-slider" class="mini-progress-slider" min="0" value="0" step="1">
+                <span class="mini-time" id="mini-total-duration">0:00</span>
+            </div>
+            
+            <div class="mini-control-buttons">
+                <button class="mini-control-btn" id="mini-shuffle-btn" title="Shuffle">
+                    <img src="./Assets/Icons/White/randomize.svg" alt="Shuffle">
+                </button>
+                <button class="mini-control-btn" id="mini-prev-btn" title="Previous">
+                    <img src="./Assets/Icons/White/previous.svg" alt="Previous">
+                </button>
+                <button class="mini-control-btn" id="mini-play-pause-btn" title="Play/Pause">
+                    <img src="./Assets/Icons/White/Start.svg" alt="Play">
+                </button>
+                <button class="mini-control-btn" id="mini-next-btn" title="Next">
+                    <img src="./Assets/Icons/White/next.svg" alt="Next">
+                </button>
+                <button class="mini-control-btn" id="mini-repeat-btn" title="Repeat">
+                    <img src="./Assets/Icons/White/repeate-one.svg" alt="Repeat">
+                </button>
+            </div>
+        </div>
+        
+        <div class="mini-playlist" id="mini-playlist">
+            </div>
+        
+        <div class="mini-footer">
+            <button class="mini-footer-btn" id="mini-close-btn">إغلاق</button>
+            <button class="mini-footer-btn" id="mini-show-main-btn">عرض المشغل</button>
+        </div>
+    </div>
+    
+    <script src="mini-player.js"></script>
+</body>
+</html>

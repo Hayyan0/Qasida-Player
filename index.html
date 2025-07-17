@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qasida Player</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="window-root">
+    <div class="window-titlebar">
+      <div class="window-actions">
+        <button class="window-btn window-close" title="Close"><img src="./Assets/Icons/White/Exit.svg" alt="Close"></button>
+        <button class="window-btn window-maximize" title="Maximize"><img src="./Assets/Icons/White/maximize.svg" alt="Maximize"></button>
+        <button class="window-btn window-minimize" title="Minimize"><img src="./Assets/Icons/White/minimize.svg" alt="Minimize"></button>
+    </div>
+    </div>
+    <div class="app-container">
+        <nav class="side-nav">
+            <img src="./Assets/Logo.png" alt="Logo" class="logo">
+            <ul>
+                <li class="nav-item active" data-page="home">
+                    <img src="./Assets/Icons/White/Home.svg" alt="Home Icon">
+                    <span>الرئيسية</span>
+                </li>
+                <li class="nav-item" data-page="favorites">
+                    <img src="./Assets/Icons/White/Favorites.svg" alt="Favorites Icon">
+                    <span>المفضلة</span>
+                </li>
+                <li class="nav-item" data-page="settings">
+                    <img src="./Assets/Icons/White/settings.svg" alt="Settings Icon">
+                    <span>الإعدادات</span>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="main-content">
+            <div class="static-controls">
+                <div class="controls-header">
+                    <div class="search-container">
+                        <input type="text" id="search-box" placeholder="بحث">
+                        <img src="./Assets/Icons/White/search.svg" alt="Search Icon">
+                    </div>
+                    <div class="filter-dropdown-wrapper">
+                      <input id="filter-dropdown-input" readonly value="حسب المنشد" />
+                      <img src="./Assets/Icons/White/Arrow.svg" class="filter-dropdown-arrow" />
+                      <div id="filter-dropdown-list" class="filter-dropdown-list" style="display: none;">
+                        <div class="filter-dropdown-option" data-value="Reader">حسب المنشد</div>
+                        <div class="filter-dropdown-option" data-value="poet_name">حسب الشاعر</div>
+                      </div>
+                    </div>
+                    <div class="tag-search-wrapper">
+                        <input type="text" id="tag-search-input" placeholder="ابحث بالوسوم" autocomplete="off">
+                        <div id="tag-search-dropdown" class="tag-search-dropdown" style="display:none;"></div>
+                    </div>
+                </div>
+                <div class="tag-filter-container"></div>
+            </div>
+
+            <div class="qasida-list-container"></div>
+
+            <div class="settings-page" style="display: none; padding: 2rem; color: var(--text-dark);">
+              <h2 style="margin-bottom: 2rem;">الإعدادات</h2>
+              <div class="setting-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <label for="theme-select" style="font-size: 1.1rem;">المظهر</label>
+                  <div class="filter-dropdown-wrapper" id="theme-dropdown-wrapper">
+                      <input id="theme-dropdown-input" readonly value="فاتح" />
+                      <img src="./Assets/Icons/White/Arrow.svg" class="filter-dropdown-arrow" />
+                      <div id="theme-dropdown-list" class="filter-dropdown-list" style="display: none;">
+                        <div class="filter-dropdown-option" data-value="light">فاتح</div>
+                        <div class="filter-dropdown-option" data-value="dark">داكن</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="setting-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                  <label for="close-behavior-select" style="font-size: 1.1rem;">عند الإغلاق</label>
+                  <div class="filter-dropdown-wrapper" id="close-behavior-dropdown-wrapper">
+                      <input id="close-behavior-dropdown-input" readonly value="إغلاق" />
+                      <img src="./Assets/Icons/White/Arrow.svg" class="filter-dropdown-arrow" />
+                      <div id="close-behavior-dropdown-list" class="filter-dropdown-list" style="display: none;">
+                        <div class="filter-dropdown-option" data-value="exit">أغلقه تمامًا</div>
+                        <div class="filter-dropdown-option" data-value="tray">أخفه في شريط المهام</div>
+                      </div>
+                  </div>
+              </div>
+            </div>
+        </main>
+
+        <footer class="player-bar">
+             <div class="player-content">
+                <div class="song-info">
+                    <p id="player-qasida-name">حدد قصيدة للتشغيل</p>
+                    <p id="player-poet-name"></p>
+                </div>
+                <div class="player-controls">
+                    <div class="slider-container">
+                        <span id="current-time">0:00</span>
+                        <input type="range" id="progress-slider" min="0" value="0" step="1">
+                        <span id="total-duration">0:00</span>
+                    </div>
+                    <div class="buttons-container">
+                        <button id="shuffle-btn" title="Shuffle"><img src="./Assets/Icons/White/randomize.svg"></button>
+                        <button id="prev-btn" title="Previous"><img src="./Assets/Icons/White/previous.svg"></button>
+                        <button id="play-pause-btn" title="Play/Pause"><img src="./Assets/Icons/White/Start.svg"></button>
+                        <button id="next-btn" title="Next"><img src="./Assets/Icons/White/next.svg"></button>
+                        <button id="repeat-btn" title="Repeat"><img src="./Assets/Icons/White/repeate-one.svg"></button>
+                    </div>
+                </div>
+                <div class="player-actions">
+                    <button id="player-fav-btn" title="Favorite"><img src="./Assets/Icons/White/heart.svg"></button>
+                    <div class="volume-container">
+                        <img src="./Assets/Icons/White/volume.svg" alt="Volume">
+                        <input type="range" id="volume-slider" min="0" max="1" value="1" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <audio id="audio-player"></audio>
+    <script src="renderer.js"></script>
+  </div>
+</body>
+</html>
