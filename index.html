@@ -11,12 +11,13 @@
 </head>
 <body>
   <div class="window-root">
+    <div id="update-notification" class="update-notification"></div>
     <div class="window-titlebar">
       <div class="window-actions">
         <button class="window-btn window-close" title="Close"><img src="./Assets/Icons/White/Exit.svg" alt="Close"></button>
         <button class="window-btn window-maximize" title="Maximize"><img src="./Assets/Icons/White/maximize.svg" alt="Maximize"></button>
         <button class="window-btn window-minimize" title="Minimize"><img src="./Assets/Icons/White/minimize.svg" alt="Minimize"></button>
-    </div>
+      </div>
     </div>
     <div class="app-container">
         <nav class="side-nav">
@@ -38,6 +39,10 @@
         </nav>
 
         <main class="main-content">
+            <div id="status-overlay" style="display: none;">
+                <div id="status-message"></div>
+            </div>
+
             <div class="static-controls">
                 <div class="controls-header">
                     <div class="search-container">
@@ -47,14 +52,14 @@
                     <div class="filter-dropdown-wrapper">
                       <input id="filter-dropdown-input" readonly value="حسب المنشد" />
                       <img src="./Assets/Icons/White/Arrow.svg" class="filter-dropdown-arrow" />
-                      <div id="filter-dropdown-list" class="filter-dropdown-list" style="display: none;">
+                      <div id="filter-dropdown-list" class="filter-dropdown-list">
                         <div class="filter-dropdown-option" data-value="Reader">حسب المنشد</div>
                         <div class="filter-dropdown-option" data-value="poet_name">حسب الشاعر</div>
                       </div>
                     </div>
                     <div class="tag-search-wrapper">
                         <input type="text" id="tag-search-input" placeholder="ابحث بالوسوم" autocomplete="off">
-                        <div id="tag-search-dropdown" class="tag-search-dropdown" style="display:none;"></div>
+                        <div id="tag-search-dropdown" class="tag-search-dropdown"></div>
                     </div>
                 </div>
                 <div class="tag-filter-container"></div>
@@ -62,30 +67,47 @@
 
             <div class="qasida-list-container"></div>
 
-            <div class="settings-page" style="display: none; padding: 2rem; color: var(--text-dark);">
-              <h2 style="margin-bottom: 2rem;">الإعدادات</h2>
-              <div class="setting-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                  <label for="theme-select" style="font-size: 1.1rem;">المظهر</label>
+            <div class="settings-page" style="display: none;">
+              <h2>الإعدادات</h2>
+              <div class="setting-item">
+                  <label for="theme-select">المظهر</label>
                   <div class="filter-dropdown-wrapper" id="theme-dropdown-wrapper">
                       <input id="theme-dropdown-input" readonly value="فاتح" />
                       <img src="./Assets/Icons/White/Arrow.svg" class="filter-dropdown-arrow" />
-                      <div id="theme-dropdown-list" class="filter-dropdown-list" style="display: none;">
+                      <div id="theme-dropdown-list" class="filter-dropdown-list">
                         <div class="filter-dropdown-option" data-value="light">فاتح</div>
                         <div class="filter-dropdown-option" data-value="dark">داكن</div>
                       </div>
                   </div>
               </div>
-              <div class="setting-item" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                  <label for="close-behavior-select" style="font-size: 1.1rem;">عند الإغلاق</label>
+              <div class="setting-item">
+                  <label for="close-behavior-select">عند الإغلاق</label>
                   <div class="filter-dropdown-wrapper" id="close-behavior-dropdown-wrapper">
                       <input id="close-behavior-dropdown-input" readonly value="إغلاق" />
                       <img src="./Assets/Icons/White/Arrow.svg" class="filter-dropdown-arrow" />
-                      <div id="close-behavior-dropdown-list" class="filter-dropdown-list" style="display: none;">
+                      <div id="close-behavior-dropdown-list" class="filter-dropdown-list">
                         <div class="filter-dropdown-option" data-value="exit">أغلقه تمامًا</div>
                         <div class="filter-dropdown-option" data-value="tray">أخفه في شريط المهام</div>
                       </div>
                   </div>
               </div>
+              <h3>التحديثات</h3>
+              <div class="setting-item">
+                <label>تحديث القصائد</label>
+                <div class="poets-data-controls">
+                    <button id="download-poets-btn" class="settings-btn">تنزيل أو تحديث القصائد</button>
+                    <div id="download-status-container"></div>
+                </div>
+              </div>
+
+              <div class="setting-item">
+                <label>تحديث المشغل</label>
+                <div class="poets-data-controls">
+                    <button id="check-update-btn" class="settings-btn">تحقق من التحديثات</button>
+                    <div id="update-status-container"></div>
+                </div>
+              </div>
+
             </div>
         </main>
 

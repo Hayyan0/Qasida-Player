@@ -109,6 +109,12 @@ button {
     height: 100vh;
     width: 100vw;
     direction: ltr;
+    padding-top: 0; 
+    transition: padding-top 0.3s ease;
+}
+
+.app-container.has-notification {
+    padding-top: 62px; 
 }
 
 .side-nav {
@@ -148,6 +154,8 @@ button {
 
 .static-controls {
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 .qasida-list-container {
@@ -276,8 +284,8 @@ button {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.25rem;
     min-height: 38px;
+    padding-bottom: 10px;
 }
 
 .tag {
@@ -789,7 +797,27 @@ input[type=range]:focus::-moz-range-thumb {
 }
 
 .settings-page{
-    padding: 0 2rem 2rem 2rem !important;
+    padding: 0 2rem 4rem 2rem !important;
+    overflow-y: auto;
+    height: 100%;
+    max-height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.settings-page::-webkit-scrollbar {
+    width: 8px;
+}
+
+.settings-page::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 4px;
+}
+
+.settings-page::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 4px;
+    border: 1px solid var(--scrollbar-track);
 }
 
 .settings-page .setting-item {
@@ -835,3 +863,143 @@ input[type=range]:focus::-moz-range-thumb {
 .icon-swapping {
     animation: icon-fade-swap 0.4s ease-in-out;
 }
+
+
+/* Add these new styles to your existing styles.css file */
+
+.update-notification {
+    position: absolute;
+    top: 38px; /* Position below the titlebar */
+    left: 0;
+    right: 0;
+    margin: 0 8px;
+    width: calc(100% - 16px);
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    padding: 8px;
+    text-align: center;
+    z-index: 2000;
+    display: none; /* Hidden by default */
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.update-notification button {
+    background-color: var(--surface-light);
+    color: var(--text-dark);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.85rem;
+}
+
+.update-notification .dismiss-btn {
+    background-color: transparent;
+    color: var(--text-light);
+    padding: 4px;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.update-notification .dismiss-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.update-notification .dismiss-btn img {
+    filter: brightness(0) invert(1);
+    width: 24px;
+    height: 24px;
+}
+
+#status-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--surface-translucent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+#status-message {
+    color: var(--text-dark);
+    font-size: 1.2rem;
+    text-align: center;
+    padding: 2rem;
+    line-height: 1.8;
+}
+
+#status-message a {
+    color: var(--primary-color);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.settings-page h2 {
+    margin-bottom: 2rem;
+    color: var(--text-dark);
+}
+
+.settings-page h3 {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.settings-divider {
+    border: none;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 2rem 0;
+}
+
+.poets-data-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.settings-btn {
+    background-color: var(--primary-color);
+    color: var(--text-light);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: background-color 0.2s;
+}
+.settings-btn:hover {
+    background-color: #34b3cf;
+}
+body.dark-theme .settings-btn:hover {
+    background-color: #28A0BD;
+}
+.settings-btn:disabled {
+    background-color: var(--text-muted);
+    cursor: not-allowed;
+}
+
+#download-status-container {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    min-height: 20px;
+}
+
