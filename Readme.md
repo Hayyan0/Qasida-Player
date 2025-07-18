@@ -17,7 +17,7 @@
 </p>
 
 
-- [Twitter](https://x.com/hyn_slm)
-- [Instagram](https://www.instagram.com/hayansl/)
+[تويتر](https://x.com/hyn_slm)  
+[انستغرام](https://www.instagram.com/hayansl/)
 
 </div>
