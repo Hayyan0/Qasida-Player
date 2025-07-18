@@ -8,6 +8,16 @@
 
 مشغل قصائد يجمع كل تسجيلات القصائد العربية في مكان واحد ليستمتع ويستفيد منها الجمهور العربي والإسلامي.
 
+<p align="center">
+  <img src="Repo/Screenshot.png" alt="Qasida Player Screenshot" width="600">
+</p>
+<p align="center">
+  <a href="https://github.com/Hayyan0/Qasida-Player/releases/latest/download/Qasida-Player-Setup-1.0.0.exe">
+    <img src="/Repo/Download.png" alt="Download Qasida Player" width="250" />
+  </a>
+</p>
+
+
 - [Twitter](https://x.com/hyn_slm)
 - [Instagram](https://www.instagram.com/hayansl/)
 
