@@ -4,13 +4,14 @@ const path = require('node:path');
 const fs = require('node:fs');
 const axios = require('axios');
 const yaml = require('js-yaml');
-const extract = require('extract-zip');
 
 let win;
 let tray;
 let miniPlayerWindow;
 
-const REPO_URL = 'https://github.com/Hayyan0/Qasida-Player';
+const POEMS_REPO_RAW_URL = 'https://raw.githubusercontent.com/Hayyan0/Poems/main';
+const POETS_DATA_URL = `${POEMS_REPO_RAW_URL}/Data.json`;
+
 const appPath = app.isPackaged ? path.dirname(app.getPath('exe')) : __dirname;
 const poetsFolderPath = path.join(appPath, 'Poets');
 const poetsVersionFilePath = path.join(poetsFolderPath, 'version.yml');
@@ -30,7 +31,7 @@ function loadSettings() {
         if (fs.existsSync(SETTINGS_PATH)) {
             return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf-8'));
         }
-    } catch (err) { console.error('Error loading settings:', err); }
+    } catch (err) { console.error('حدث خطأ أثناء تحميل الإعدادات:', err); }
     return { onClose: 'exit' };
 }
 function saveSettings(settings) {
@@ -38,12 +39,11 @@ function saveSettings(settings) {
         fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
         return true;
     } catch (err) {
-        console.error('Error saving settings:', err);
+        console.error('حدث خطأ أثناء حفظ الإعدادات:', err);
         return false;
     }
 }
 
-// --- Main Window ---
 function createWindow() {
   win = new BrowserWindow({
     width: 1200,
@@ -94,42 +94,43 @@ app.on('window-all-closed', () => {
 });
 
 autoUpdater.on('update-available', (info) => {
-  console.log('Update available:', info);
+  console.log('تحديث متوفر:', info);
   win.webContents.send('update-available', info);
 });
 autoUpdater.on('update-not-available', () => {
-  console.log('No update available');
+  console.log('لا يوجد تحديث متوفر');
   win.webContents.send('update-not-available');
 });
 autoUpdater.on('update-downloaded', () => {
-  console.log('Update downloaded');
+  console.log('تم تنزيل التحديث');
   win.webContents.send('update-downloaded');
 });
 autoUpdater.on('error', (err) => {
-  console.error('Auto-updater error:', err);
+  console.error('حدث خطأ في التحديث التلقائي:', err);
   win.webContents.send('update-error', err.message);
 });
 autoUpdater.on('download-progress', (progressObj) => {
-  console.log('Download progress:', progressObj.percent);
+  console.log('تقدم التنزيل:', progressObj.percent);
   win.webContents.send('update-download-progress', {
     percent: progressObj.percent
   });
 });
 
 ipcMain.on('restart-app', () => {
-  console.log('Restarting app for update installation');
+  console.log('إعادة تشغيل التطبيق لتثبيت التحديث');
   autoUpdater.quitAndInstall();
 });
 ipcMain.on('download-update', () => {
-  console.log('Starting update download');
+  console.log('بدء تنزيل التحديث');
   autoUpdater.downloadUpdate();
 });
 ipcMain.on('check-for-updates', () => {
-  console.log('Manual update check triggered');
+  console.log('تم تشغيل فحص التحديث يدويًا');
   if (app.isPackaged) {
     autoUpdater.checkForUpdates();
   } else {
-    console.log('Update check skipped in development mode');
+    console.log('تم تخطي فحص التحديث في وضع التطوير');
+    win.webContents.send('update-not-available');
   }
 });
 
@@ -143,17 +144,32 @@ function checkPoetsFolder() {
     }
 }
 
+function getLocalPoetsVersion() {
+    try {
+        if (fs.existsSync(poetsVersionFilePath)) {
+            const fileContents = fs.readFileSync(poetsVersionFilePath, 'utf8');
+            const localConfig = yaml.load(fileContents);
+            return localConfig.Version?.replace(/^v/, '') || null;
+        }
+        return '0.0.0';
+    } catch (error) {
+        console.error('تعذر قراءة إصدار القصائد المحلي:', error);
+        return null;
+    }
+}
+
+
 async function checkForPoetsUpdate() {
     try {
         const localVersion = getLocalPoetsVersion();
         if (localVersion === null) { 
+            console.error('تعذر تحديد إصدار القصائد المحلي.');
             return;
         }
 
-        const remoteVersionUrl = `${REPO_URL}/releases/download/Poets/Poets-Version.yml`;
-        const response = await axios.get(remoteVersionUrl);
-        const remoteConfig = yaml.load(response.data);
-        const remoteVersion = remoteConfig.Version;
+        const response = await axios.get(POETS_DATA_URL);
+        const remoteConfig = response.data;
+        const remoteVersion = remoteConfig.version;
 
         if (remoteVersion > localVersion) {
             dialog.showMessageBox(win, {
@@ -168,107 +184,120 @@ async function checkForPoetsUpdate() {
             });
         }
     } catch (error) {
-        console.error('Failed to check for Poets update:', error.message);
+        console.error('فشل في التحقق من تحديث القصائد:', error.message);
     }
 }
 
-function getLocalPoetsVersion() {
-    try {
-        if (fs.existsSync(poetsVersionFilePath)) {
-            const fileContents = fs.readFileSync(poetsVersionFilePath, 'utf8');
-            const localConfig = yaml.load(fileContents);
-            return localConfig.Version || null;
-        }
-        return null; 
-    } catch (error) {
-        console.error('Could not read local poets version:', error);
-        return null;
-    }
-}
 
 ipcMain.handle('download-poets', async () => {
-    const downloadUrl = `${REPO_URL}/releases/download/Poets/Poets.zip`;
-    const tempZipPath = path.join(app.getPath('temp'), 'Poets.zip');
-    const tempUnpackPath = path.join(app.getPath('temp'), 'Poets-Unpack');
-
     try {
-        let oldPoetFolders = new Set();
-        if (fs.existsSync(poetsFolderPath)) {
-            oldPoetFolders = new Set(fs.readdirSync(poetsFolderPath, { withFileTypes: true })
-                .filter(dirent => dirent.isDirectory())
-                .map(dirent => dirent.name));
-        }
+        win.webContents.send('download-progress', { percent: 0, message: 'جاري جلب بيانات التحديث...' });
+        const mainDataResponse = await axios.get(POETS_DATA_URL);
+        const { version: remoteVersion, folders: remoteFoldersRaw } = mainDataResponse.data;
 
-        const response = await axios({
-            method: 'get',
-            url: downloadUrl,
-            responseType: 'stream'
-        });
-
-        const totalLength = response.headers['content-length'];
-        const writer = fs.createWriteStream(tempZipPath);
-        let downloadedLength = 0;
-
-        response.data.on('data', (chunk) => {
-            downloadedLength += chunk.length;
-            const percentage = (downloadedLength / totalLength) * 100;
-            win.webContents.send('download-progress', { percent: percentage });
-        });
-
-        response.data.pipe(writer);
-
-        await new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
-        });
-
-        win.webContents.send('unpacking-start');
-        if (fs.existsSync(tempUnpackPath)) {
-            fs.rmSync(tempUnpackPath, { recursive: true, force: true });
-        }
-        fs.mkdirSync(tempUnpackPath, { recursive: true });
-        await extract(tempZipPath, { dir: tempUnpackPath });
-
-        const newPoetsSourcePath = path.join(tempUnpackPath, 'Poets');
-        if (!fs.existsSync(newPoetsSourcePath)) {
-            throw new Error('"Poets" folder not found in the downloaded zip file.');
+        if (!remoteFoldersRaw || !Array.isArray(remoteFoldersRaw)) {
+            throw new Error('هيكلة البيانات خاطئة في ملف Data.json');
         }
         
-        const newPoetFolders = new Set(fs.readdirSync(newPoetsSourcePath));
+        const remoteFolders = remoteFoldersRaw.map(f => f.trim());
+
         if (!fs.existsSync(poetsFolderPath)) {
             fs.mkdirSync(poetsFolderPath, { recursive: true });
         }
 
-        for (const folderName of newPoetFolders) {
-            const source = path.join(newPoetsSourcePath, folderName);
-            const destination = path.join(poetsFolderPath, folderName);
-            fs.cpSync(source, destination, { recursive: true });
+        const localFolders = fs.readdirSync(poetsFolderPath, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+
+        for (const localFolder of localFolders) {
+            if (!remoteFolders.includes(localFolder)) {
+                console.log(`يتم إزالة مجلد الشاعر القديم: ${localFolder}`);
+                const folderToRemovePath = path.join(poetsFolderPath, localFolder);
+                fs.rmSync(folderToRemovePath, { recursive: true, force: true });
+            }
         }
-        
-        for (const oldFolder of oldPoetFolders) {
-            if (!newPoetFolders.has(oldFolder)) {
-                console.log(`Removing outdated poet folder: ${oldFolder}`);
-                fs.rmSync(path.join(poetsFolderPath, oldFolder), { recursive: true, force: true });
+
+        let totalFilesToDownload = 0;
+        let filesDownloaded = 0;
+        const allDownloadTasks = [];
+
+        for (const folderName of remoteFolders) {
+            const encodedFolderName = encodeURIComponent(folderName);
+            const poetDataUrl = `${POEMS_REPO_RAW_URL}/Poets/${encodedFolderName}/.Data.json`;
+            const localPoetPath = path.join(poetsFolderPath, folderName);
+
+            if (!fs.existsSync(localPoetPath)) {
+                fs.mkdirSync(localPoetPath, { recursive: true });
+            }
+
+            try {
+                const poetDataResponse = await axios.get(poetDataUrl);
+                const poetData = poetDataResponse.data;
+
+                const localDataPath = path.join(localPoetPath, '.Data.json');
+                fs.writeFileSync(localDataPath, JSON.stringify(poetData, null, 2), 'utf-8');
+
+                if (poetData.qasidas && Array.isArray(poetData.qasidas)) {
+                    for (const qasida of poetData.qasidas) {
+                        if (!qasida.file_name) continue;
+                        const localFilePath = path.join(localPoetPath, qasida.file_name);
+                        if (!fs.existsSync(localFilePath)) {
+                            totalFilesToDownload++;
+                            const encodedFileName = encodeURIComponent(qasida.file_name);
+                            const fileUrl = `${POEMS_REPO_RAW_URL}/Poets/${encodedFolderName}/${encodedFileName}`;
+                            allDownloadTasks.push({ url: fileUrl, path: localFilePath });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(`فشل في جلب أو معالجة بيانات القصائد: ${folderName}`, err.message);
             }
         }
         
-        const newVersionFileSource = path.join(tempUnpackPath, 'Poets-Version.yml');
-        if (fs.existsSync(newVersionFileSource)) {
-            fs.copyFileSync(newVersionFileSource, poetsVersionFilePath);
+        if (allDownloadTasks.length === 0) {
+             win.webContents.send('download-progress', { percent: 100, message: 'القصائد محدثة بالفعل.' });
         } else {
-             const remoteVersionUrl = `${REPO_URL}/releases/download/Poets/Poets-Version.yml`;
-             const versionResponse = await axios.get(remoteVersionUrl);
-             fs.writeFileSync(poetsVersionFilePath, versionResponse.data, 'utf-8');
+            win.webContents.send('download-progress', { percent: 0, message: `جاري تنزيل ${allDownloadTasks.length} ملف...` });
         }
 
-        fs.unlinkSync(tempZipPath);
-        fs.rmSync(tempUnpackPath, { recursive: true, force: true });
+        for (const task of allDownloadTasks) {
+            try {
+                const response = await axios({
+                    method: 'get',
+                    url: task.url,
+                    responseType: 'stream'
+                });
+                
+                const writer = fs.createWriteStream(task.path);
+                response.data.pipe(writer);
+
+                await new Promise((resolve, reject) => {
+                    writer.on('finish', resolve);
+                    writer.on('error', reject);
+                });
+
+                filesDownloaded++;
+                const percentage = (filesDownloaded / totalFilesToDownload) * 100;
+                win.webContents.send('download-progress', { percent: percentage, message: `جاري تنزيل ${filesDownloaded} من ${totalFilesToDownload}` });
+
+            } catch (err) {
+                 console.error(`فشل في تنزيل الملف: ${task.url}`, err.message);
+                 if (fs.existsSync(task.path)) {
+                     fs.unlinkSync(task.path); 
+                 }
+            }
+        }
+
+        const newVersionContent = yaml.dump({ Version: `v${remoteVersion}` });
+        fs.writeFileSync(poetsVersionFilePath, newVersionContent, 'utf-8');
+        
+        win.webContents.send('unpacking-start'); 
 
         return { success: true };
+
     } catch (error) {
-        console.error('An error occurred during poets download/unpack:', error);
-        if (fs.existsSync(tempZipPath)) fs.unlinkSync(tempZipPath);
-        if (fs.existsSync(tempUnpackPath)) fs.rmSync(tempUnpackPath, { recursive: true, force: true });
+        console.error('حدث خطأ أثناء تنزيل/تحديث القصائد:', error);
+        win.webContents.send('download-progress', { percent: 0, message: `خطأ: ${error.message}` });
         return { success: false, error: error.message };
     }
 });
@@ -290,46 +319,32 @@ ipcMain.handle('get-qasidas', async () => {
             if (fs.existsSync(dataPath)) {
                 const content = fs.readFileSync(dataPath, 'utf-8');
                 const data = JSON.parse(content);
-                const relativeFolderPath = path.join('Poets', folder).replace(/\\/g, '/');
 
-                data.qasidas.forEach(qasida => {
-                    if (!qasida.file_name) return;
-                    
-                    const originalFilePath = path.join(poetsFolderPath, folder, qasida.file_name);
-                    let finalFileName = qasida.file_name;
-                    let fileExists = fs.existsSync(originalFilePath);
+                if (data.qasidas && Array.isArray(data.qasidas)) {
+                    data.qasidas.forEach(qasida => {
+                        if (!qasida.file_name) return;
+                        
+                        const originalFilePath = path.join(poetsFolderPath, folder, qasida.file_name);
+                        let fileExists = fs.existsSync(originalFilePath);
 
-                    if (!fileExists) {
-                        const ext = path.extname(qasida.file_name).toLowerCase();
-                        const base = path.basename(qasida.file_name, ext);
-                        const altExt = ext === '.mp3' ? '.m4a' : '.mp3';
-                        const altPath = path.join(poetsFolderPath, folder, base + altExt);
-                        if(fs.existsSync(altPath)) {
-                            finalFileName = base + altExt;
-                            fileExists = true;
+                        if (fileExists) {
+                            const tags = qasida.Tags ? qasida.Tags.split('،').map(t => t.trim()).filter(t => t) : [];
+                            allQasidas.push({
+                                ...qasida,
+                                directory: path.join(poetsFolderPath, folder).replace(/\\/g, '/'),
+                                tagsArray: tags
+                            });
                         }
-                    }
-
-                    if (fileExists) {
-                        const tags = qasida.Tags ? qasida.Tags.split('،').map(t => t.trim()).filter(t => t) : [];
-                        allQasidas.push({
-                            ...qasida,
-                            file_name: finalFileName,
-                            directory: path.join(poetsFolderPath, folder).replace(/\\/g, '/'),
-                            tagsArray: tags
-                        });
-                    }
-                });
+                    });
+                }
             }
         }
     } catch (error) {
-        console.error("Error reading qasida data:", error);
+        console.error("حدث خطأ أثناء قراءة بيانات القصائد:", error);
         return [];
     }
     return allQasidas;
 });
-
-
 
 const FAVORITES_PATH = path.join(app.getPath('userData'), 'favorites.json');
 
@@ -341,7 +356,7 @@ ipcMain.handle('save-favorites', async (event, favorites) => {
         fs.writeFileSync(FAVORITES_PATH, JSON.stringify(favorites, null, 2), 'utf-8');
         return true;
     } catch (err) {
-        console.error('Error saving favorites:', err);
+        console.error('حدث خطأ أثناء حفظ المفضلات:', err);
         return false;
     }
 });
@@ -353,11 +368,10 @@ ipcMain.handle('load-favorites', async () => {
         }
         return [];
     } catch (err) {
-        console.error('Error loading favorites:', err);
+        console.error('حدث خطأ أثناء تحميل المفضلات:', err);
         return [];
     }
 });
-
 
 ipcMain.on('window-action', (event, action) => {
     if (action === 'close') {

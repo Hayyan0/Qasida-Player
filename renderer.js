@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- State Variables ---
     let allQasidas = [];
     let currentPlaylist = [];
     let currentlyPlayingQasida = null; 
@@ -34,7 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBehaviorDropdownWrapper = document.getElementById('close-behavior-dropdown-wrapper');
     const closeBehaviorDropdownInput = document.getElementById('close-behavior-dropdown-input');
     
-    // --- New UI Elements ---
     const statusOverlay = document.getElementById('status-overlay');
     const statusMessage = document.getElementById('status-message');
     const downloadPoetsBtn = document.getElementById('download-poets-btn');
@@ -43,8 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkUpdateBtn = document.getElementById('check-update-btn');
     const updateStatusContainer = document.getElementById('update-status-container');
 
-    // --- Utility Functions ---
     function getQasidaKey(q) {
+        if (!q || !q.file_name || !q.qasida_name || !q.Reader) return null;
         return `${q.file_name}|${q.qasida_name}|${q.Reader}`;
     }
 
@@ -59,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function initializeQasidas() {
         allQasidas = await window.api.getQasidas();
         if (!allQasidas || allQasidas.length === 0) {
-            showStatusMessage(`مجلد الشعراء فارغ. حاول إعادة تنزيله من <a href="#" id="go-to-settings-link-2">صفحة الإعدادات</a>.`);
+            showStatusMessage(`مجلد القصائد فارغ. حاول إعادة تنزيله من <a href="#" id="go-to-settings-link-2">صفحة الإعدادات</a>.`);
             document.getElementById('go-to-settings-link-2')?.addEventListener('click', (e) => {
                 e.preventDefault();
                 document.querySelector('.nav-item[data-page="settings"]').click();
@@ -98,18 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     window.api.receive('show-download-ui', () => {
         document.querySelector('.nav-item[data-page="settings"]').click();
-        downloadStatusContainer.textContent = "تحديث جديد متوفر! اضغط على الزر أعلاه للبدء.";
+        downloadStatusContainer.textContent = "تحديث جديد متوفر!";
     });
 
     if (downloadPoetsBtn) {
         downloadPoetsBtn.addEventListener('click', async () => {
             downloadPoetsBtn.disabled = true;
-            downloadStatusContainer.innerHTML = 'بدء التنزيل...';
+            downloadStatusContainer.innerHTML = 'بدء التحديث...';
             const result = await window.api.downloadPoets();
             if (result.success) {
-                downloadStatusContainer.innerHTML = 'اكتمل التنزيل بنجاح! سيتم تحديث القائمة.';
-                await initializeQasidas();
-                document.querySelector('.nav-item[data-page="home"]').click();
             } else {
                 downloadStatusContainer.innerHTML = `حدث خطأ: ${result.error}`;
             }
@@ -122,23 +117,36 @@ document.addEventListener('DOMContentLoaded', () => {
             checkUpdateBtn.disabled = true;
             updateStatusContainer.innerHTML = 'جار التحقق من وجود تحديثات...';
             window.api.checkForUpdates();
-            setTimeout(() => {
-                checkUpdateBtn.disabled = false;
-                updateStatusContainer.innerHTML = 'تم التحثث من التحديثات.';
-            }, 5000);
         });
     }
+    
+    window.api.receive('update-not-available', () => {
+        updateStatusContainer.innerHTML = 'أنت تستخدم أحدث إصدار.';
+        checkUpdateBtn.disabled = false;
+    });
 
-    window.api.receive('download-progress', ({ percent }) => {
-        downloadStatusContainer.innerHTML = `جاري التنزيل... ${percent.toFixed(1)}%`;
+
+    window.api.receive('download-progress', ({ percent, message }) => {
+        if (message) {
+            downloadStatusContainer.innerHTML = message;
+        } else {
+            downloadStatusContainer.innerHTML = `جاري التنزيل... ${percent.toFixed(1)}%`;
+        }
     });
     
     window.api.receive('unpacking-start', () => {
-        downloadStatusContainer.innerHTML = 'اكتمل التنزيل. جاري فك الضغط...';
+        downloadStatusContainer.innerHTML = 'اكتمل التحديث بنجاح!';
+        setTimeout(() => {
+            initializeQasidas();
+            document.querySelector('.nav-item[data-page="home"]').click();
+        }, 1000);
     });
 
     window.api.receive('update-available', (info) => {
-        console.log('Received update-available event:', info);
+        console.log('تم استقبال حدث وجود تحديث متوفر:', info);
+        updateStatusContainer.innerHTML = '';
+        checkUpdateBtn.disabled = false;
+
         updateNotification.style.display = 'flex';
         document.querySelector('.app-container').classList.add('has-notification');
         updateNotification.innerHTML = `
@@ -149,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
         `;
         document.getElementById('download-update-btn').addEventListener('click', () => {
-            console.log('Download update button clicked');
+            console.log('تم الضغط على زر تنزيل التحديث');
             updateNotification.innerHTML = `
                 <span>جاري تنزيل التحديث...</span>
                 <button id="dismiss-update-btn" class="dismiss-btn">
@@ -159,14 +167,14 @@ document.addEventListener('DOMContentLoaded', () => {
             window.api.downloadUpdate();
         });
         document.getElementById('dismiss-update-btn').addEventListener('click', () => {
-            console.log('Dismiss update button clicked');
+            console.log('تم الضغط على زر إغلاق التحديث');
             updateNotification.style.display = 'none';
             document.querySelector('.app-container').classList.remove('has-notification');
         });
     });
 
     window.api.receive('update-downloaded', () => {
-        console.log('Received update-downloaded event');
+        console.log('تم استقبال حدث اكتمال تنزيل التحديث');
         updateNotification.style.display = 'flex';
         document.querySelector('.app-container').classList.add('has-notification');
         updateNotification.innerHTML = `
@@ -177,35 +185,24 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
         `;
         document.getElementById('restart-app-btn').addEventListener('click', () => {
-            console.log('Restart app button clicked');
+            console.log('تم الضغط على زر إعادة تشغيل التطبيق');
             window.api.restartApp();
         });
         document.getElementById('dismiss-update-btn').addEventListener('click', () => {
-            console.log('Dismiss update button clicked');
+            console.log('تم الضغط على زر إغلاق التحديث');
             updateNotification.style.display = 'none';
             document.querySelector('.app-container').classList.remove('has-notification');
         });
     });
     
     window.api.receive('update-error', (errorMessage) => {
-        console.log('Received update-error event:', errorMessage);
-        updateNotification.style.display = 'flex';
-        document.querySelector('.app-container').classList.add('has-notification');
-        updateNotification.innerHTML = `
-            <span>خطأ في التحديث: ${errorMessage}</span>
-            <button id="dismiss-update-btn" class="dismiss-btn">
-                <img src="${getIconPath('close')}" alt="إغلاق" style="width: 14px; height: 14px;">
-            </button>
-        `;
-        document.getElementById('dismiss-update-btn').addEventListener('click', () => {
-            console.log('Dismiss update button clicked');
-            updateNotification.style.display = 'none';
-            document.querySelector('.app-container').classList.remove('has-notification');
-        });
+        console.log('تم استقبال حدث خطأ في التحديث:', errorMessage);
+        updateStatusContainer.innerHTML = `خطأ في التحديث: ${errorMessage}`;
+        checkUpdateBtn.disabled = false;
     });
 
     window.api.receive('update-download-progress', (data) => {
-        console.log('Received update-download-progress event:', data);
+        console.log('تم استقبال حدث تقدم تنزيل التحديث:', data);
         if (updateNotification.style.display === 'flex') {
             updateNotification.innerHTML = `
                 <span>جاري تنزيل التحديث... ${data.percent ? data.percent.toFixed(1) + '%' : ''}</span>
@@ -214,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
             document.getElementById('dismiss-update-btn').addEventListener('click', () => {
-                console.log('Dismiss update button clicked');
+                console.log('تم الضغط على زر إغلاق التحديث');
                 updateNotification.style.display = 'none';
                 document.querySelector('.app-container').classList.remove('has-notification');
             });
@@ -253,7 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
         syncPlayerState(true);
     }
     
-    // --- Player Logic ---
     function loadTrack(index) {
         if (index < 0 || index >= currentPlaylist.length) return;
         const qasida = currentPlaylist[index];
@@ -266,12 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.querySelectorAll('.qasida-item.playing').forEach(el => el.classList.remove('playing'));
         const key = getQasidaKey(qasida);
-        const targetItem = document.querySelector(`.qasida-item[data-qasida-key="${key}"]`);
-        if (targetItem) targetItem.classList.add('playing');
+        if (key) {
+            const targetItem = document.querySelector(`.qasida-item[data-qasida-key="${CSS.escape(key)}"]`);
+            if (targetItem) targetItem.classList.add('playing');
+        }
+
 
         updatePlayerFavIcon();
         audioPlayer.load();
-        audioPlayer.play().catch(e => console.error("Audio play failed:", e));
+        audioPlayer.play().catch(e => console.error("فشل تشغيل الصوت:", e));
         syncPlayerState(true);
     }
     
@@ -279,7 +278,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemEl = document.createElement('div');
         itemEl.className = 'qasida-item';
         itemEl.dataset.qasidaName = qasida.qasida_name;
-        itemEl.dataset.qasidaKey = getQasidaKey(qasida); 
+        const qasidaKey = getQasidaKey(qasida);
+        if (qasidaKey) {
+            itemEl.dataset.qasidaKey = qasidaKey;
+        }
         const subName = groupBy === 'Reader' ? qasida.poet_name : qasida.Reader;
         let versionHTML = '';
         if (versions.length > 1) {
@@ -334,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return itemEl;
     }
 
-    // --- Event Listeners ---
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             const page = item.getAttribute('data-page');
@@ -472,9 +473,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playTrackByData(qasida) {
-        currentIndex = currentPlaylist.findIndex(item => getQasidaKey(item) === getQasidaKey(qasida));
+        const key = getQasidaKey(qasida);
+        if (!key) return;
+        
+        currentIndex = currentPlaylist.findIndex(item => getQasidaKey(item) === key);
         if (currentIndex === -1) {
-            currentIndex = allQasidas.findIndex(item => getQasidaKey(item) === getQasidaKey(qasida));
+            currentIndex = allQasidas.findIndex(item => getQasidaKey(item) === key);
             currentPlaylist = [...allQasidas];
         }
         loadTrack(currentIndex);
@@ -505,11 +509,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function isQasidaFavorited(q) {
-        return favoriteQasidas.some(fav => getQasidaKey(fav) === getQasidaKey(q));
+        if (!q) return false;
+        const key = getQasidaKey(q);
+        if (!key) return false;
+        return favoriteQasidas.some(fav => getQasidaKey(fav) === key);
     }
 
     function toggleFavorite(qasida) {
         const key = getQasidaKey(qasida);
+        if (!key) return;
+
         const idx = favoriteQasidas.findIndex(fav => getQasidaKey(fav) === key);
         if (idx === -1) {
             favoriteQasidas.push({ file_name: qasida.file_name, qasida_name: qasida.qasida_name, Reader: qasida.Reader });
@@ -520,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePlayerFavIcon();
         const isNowFavorite = isQasidaFavorited(qasida);
         const newIconSrc = getIconPath('heart', isNowFavorite);
-        document.querySelectorAll(`.qasida-item[data-qasida-key="${key}"]`).forEach(item => {
+        document.querySelectorAll(`.qasida-item[data-qasida-key="${CSS.escape(key)}"]`).forEach(item => {
             const favImg = item.querySelector('.fav-btn img');
             if (favImg) favImg.src = newIconSrc;
         });
