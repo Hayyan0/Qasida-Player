@@ -12,8 +12,7 @@ let miniPlayerWindow;
 const POEMS_REPO_RAW_URL = 'https://raw.githubusercontent.com/Hayyan0/Poems/main';
 const POETS_DATA_URL = `${POEMS_REPO_RAW_URL}/Data.json`;
 
-const appPath = app.isPackaged ? path.dirname(app.getPath('exe')) : __dirname;
-const poetsFolderPath = path.join(appPath, 'Poets');
+const poetsFolderPath = path.join(app.getPath('userData'), 'Poets');
 const poetsVersionFilePath = path.join(poetsFolderPath, 'version.yml');
 
 autoUpdater.setFeedURL({
@@ -118,8 +117,10 @@ autoUpdater.on('download-progress', (progressObj) => {
 
 ipcMain.on('restart-app', () => {
   console.log('إعادة تشغيل التطبيق لتثبيت التحديث');
+  app.isQuitting = true;
   autoUpdater.quitAndInstall();
 });
+
 ipcMain.on('download-update', () => {
   console.log('بدء تنزيل التحديث');
   autoUpdater.downloadUpdate();
