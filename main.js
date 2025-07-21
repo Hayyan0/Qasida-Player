@@ -15,6 +15,38 @@ const POETS_DATA_URL = `${POEMS_REPO_RAW_URL}/Data.json`;
 const poetsFolderPath = path.join(app.getPath('userData'), 'Poets');
 const poetsVersionFilePath = path.join(poetsFolderPath, 'version.yml');
 
+/**
+ * Cleans up the electron-updater cache directory on startup.
+ * This function finds the updater cache folder and removes any leftover
+ * installer (.exe) files from previous updates to keep the system clean.
+ */
+function cleanupUpdaterCache() {
+    // Construct the path to the updater cache directory. This is typically located
+    // in the user's Local AppData folder.
+    const updaterCacheDir = path.join(app.getPath('appData'), '..', 'Local', 'qasida-player-updater');
+
+    // Check if the directory exists before attempting to clean it.
+    if (fs.existsSync(updaterCacheDir)) {
+        console.log(`Updater cache directory found. Cleaning up: ${updaterCacheDir}`);
+        try {
+            // Read all files in the directory.
+            const files = fs.readdirSync(updaterCacheDir);
+            for (const file of files) {
+                // Target and delete any leftover installer executables.
+                if (path.extname(file).toLowerCase() === '.exe') {
+                    const filePath = path.join(updaterCacheDir, file);
+                    console.log(`Removing leftover installer: ${filePath}`);
+                    fs.unlinkSync(filePath); // Delete the file.
+                }
+            }
+            console.log('Updater cache cleanup complete.');
+        } catch (error) {
+            // Log any errors that occur during the cleanup process.
+            console.error('Error during updater cache cleanup:', error);
+        }
+    }
+}
+
 autoUpdater.setFeedURL({
   provider: 'github',
   owner: 'Hayyan0',
@@ -82,6 +114,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // Call the cleanup function on application startup.
+  cleanupUpdaterCache();
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
