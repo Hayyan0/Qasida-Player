@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span>يتوفر تحديث جديد (${info.version}).</span>
             <button id="download-update-btn">تنزيل التحديث</button>
             <button id="dismiss-update-btn" class="dismiss-btn">
-                <img src="${getIconPath('close')}" alt="إغلاق" style="width: 14px; height: 14px;">
+                <img src="${getIconPath('close')}" alt="إغلاق" style="width: 25px; height: 25px;">
             </button>
         `;
         document.getElementById('download-update-btn').addEventListener('click', () => {
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNotification.innerHTML = `
                 <span>جاري تنزيل التحديث...</span>
                 <button id="dismiss-update-btn" class="dismiss-btn">
-                    <img src="${getIconPath('close')}" alt="إغلاق" style="width: 14px; height: 14px;">
+                    <img src="${getIconPath('close')}" alt="إغلاق" style="width: 25px; height: 25px;">
                 </button>
             `;
             window.api.downloadUpdate();
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <span>تم تنزيل التحديث.</span>
             <button id="restart-app-btn">إعادة التشغيل للتثبيت</button>
             <button id="dismiss-update-btn" class="dismiss-btn">
-                <img src="${getIconPath('close')}" alt="إغلاق" style="width: 14px; height: 14px;">
+                <img src="${getIconPath('close')}" alt="إغلاق" style="width: 25px; height: 25px;">
             </button>
         `;
         document.getElementById('restart-app-btn').addEventListener('click', () => {
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNotification.innerHTML = `
                 <span>جاري تنزيل التحديث... ${data.percent ? data.percent.toFixed(1) + '%' : ''}</span>
                 <button id="dismiss-update-btn" class="dismiss-btn">
-                    <img src="${getIconPath('close')}" alt="إغلاق" style="width: 14px; height: 14px;">
+                    <img src="${getIconPath('close')}" alt="إغلاق" style="width: 25px; height: 25px;">
                 </button>
             `;
             document.getElementById('dismiss-update-btn').addEventListener('click', () => {
@@ -298,8 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="item-number">${index + 1}</span>
             <button class="fav-btn"><img src="${getIconPath('heart', isFav)}"></button>
             <div class="item-details">
-                <p class="qasida-name">${qasida.qasida_name}</p>
-                <p class="sub-name">${subName}</p>
+                <p class="qasida-name">${qasida.qasida_name || 'اسم غير معروف'}</p>
+                <p class="sub-name">${subName || 'غير معروف'}</p>
             </div>
             ${versionHTML}
             <span class="item-duration">--:--</span>
@@ -375,11 +375,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderUI() {
         renderActiveTags();
         const normalizedSearchTerm = normalizeArabic(searchBox.value.toLowerCase());
-        const searchedQasidas = allQasidas.filter(q =>
-            (normalizeArabic(q.qasida_name.toLowerCase()).includes(normalizedSearchTerm)) ||
-            (normalizeArabic(q.poet_name.toLowerCase()).includes(normalizedSearchTerm)) ||
-            (normalizeArabic(q.Reader.toLowerCase()).includes(normalizedSearchTerm))
-        );
+        
+        const searchedQasidas = allQasidas.filter(q => {
+            if (!q) return false;
+            const qasidaNameMatch = typeof q.qasida_name === 'string' && normalizeArabic(q.qasida_name.toLowerCase()).includes(normalizedSearchTerm);
+            const poetNameMatch = typeof q.poet_name === 'string' && normalizeArabic(q.poet_name.toLowerCase()).includes(normalizedSearchTerm);
+            const readerMatch = typeof q.Reader === 'string' && normalizeArabic(q.Reader.toLowerCase()).includes(normalizedSearchTerm);
+            return qasidaNameMatch || poetNameMatch || readerMatch;
+        });
 
         const filteredQasidas = activeTags.length > 0
             ? searchedQasidas.filter(q =>
@@ -388,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : searchedQasidas;
 
         const groupedData = filteredQasidas.reduce((acc, qasida) => {
-            const key = qasida[groupBy];
+            const key = qasida[groupBy] || 'غير معروف';
             if (!acc[key]) acc[key] = [];
             acc[key].push(qasida);
             return acc;
@@ -398,6 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (Object.keys(groupedData).length === 0) {
             qasidaListContainer.innerHTML = `<p class="no-results">لا توجد نتائج تطابق بحثك.</p>`;
         } else {
+            const isSearchActive = normalizedSearchTerm.length > 0;
             Object.keys(groupedData).sort().forEach(groupName => {
                 const groupWrapper = document.createElement('div');
                 groupWrapper.className = 'list-group';
@@ -425,6 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 groupWrapper.appendChild(header);
                 groupWrapper.appendChild(itemsWrapper);
                 qasidaListContainer.appendChild(groupWrapper);
+
+                if (isSearchActive) {
+                    header.querySelector('.arrow').classList.add('open');
+                    itemsWrapper.classList.add('open');
+                    itemsWrapper.style.maxHeight = itemsWrapper.scrollHeight + "px";
+                }
             });
         }
         currentPlaylist = filteredQasidas;
@@ -437,11 +447,14 @@ document.addEventListener('DOMContentLoaded', () => {
             allQasidas.find(q => getQasidaKey(q) === getQasidaKey(fav))
         ).filter(Boolean); 
 
-        const searchedQasidas = favoriteFullQasidas.filter(q =>
-            (normalizeArabic(q.qasida_name.toLowerCase()).includes(normalizedSearchTerm)) ||
-            (normalizeArabic(q.poet_name.toLowerCase()).includes(normalizedSearchTerm)) ||
-            (normalizeArabic(q.Reader.toLowerCase()).includes(normalizedSearchTerm))
-        );
+        const searchedQasidas = favoriteFullQasidas.filter(q => {
+            if (!q) return false;
+            const qasidaNameMatch = typeof q.qasida_name === 'string' && normalizeArabic(q.qasida_name.toLowerCase()).includes(normalizedSearchTerm);
+            const poetNameMatch = typeof q.poet_name === 'string' && normalizeArabic(q.poet_name.toLowerCase()).includes(normalizedSearchTerm);
+            const readerMatch = typeof q.Reader === 'string' && normalizeArabic(q.Reader.toLowerCase()).includes(normalizedSearchTerm);
+            return qasidaNameMatch || poetNameMatch || readerMatch;
+        });
+        
         const filteredQasidas = activeTags.length > 0
             ? searchedQasidas.filter(q => activeTags.every(tag => q.tagsArray && q.tagsArray.includes(tag)))
             : searchedQasidas;
@@ -700,8 +713,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function groupQasidasByName(qasidas) {
         return qasidas.reduce((acc, qasida) => {
-            if (!acc.has(qasida.qasida_name)) { acc.set(qasida.qasida_name, []); }
-            acc.get(qasida.qasida_name).push(qasida);
+            const name = qasida.qasida_name || 'اسم غير معروف';
+            if (!acc.has(name)) { acc.set(name, []); }
+            acc.get(name).push(qasida);
             return acc;
         }, new Map());
     }
